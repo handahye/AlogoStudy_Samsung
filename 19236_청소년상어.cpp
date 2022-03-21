@@ -5,123 +5,178 @@
 #include <queue>
 using namespace std;
 /*
-#19236 청소년 상어
-상어가 먹을 수 있는 최대 물고기 수 구하기~
-1) 물고기 이동
-   - 물고기는 번호가 작은 순서로 움직 움직
-   - 만약 상어랑 만나거나 map 벗어나면 반시계 방향으로 45도 각도 틈
-	 (1) 이동 가넝하면 그 물고기랑 자리 체인지
-	 (2) 이동 안되면 그 자리에 가마니~~~
-	- 해당 방향으로 이동 가능하면 그 자리에 있는 물고기랑 자리 바꿩
-2) 상어 이동
-   - 해당 방향으로 여러칸 이동 가능~~~! (전부 다 따져야 함)
+- 1의 번호를 가진 상어는 모두 내쫓기 가능
+- 맨 처음에는 모든 상어가 자신의 위치에 자신의 냄새를 뿌림
+- 1초마다 모든 상어가 상하좌우 인접한 칸으로 이동하고, 자신의 냄새도 뿌림
+- 냄새는 상어가 k번 이동후에 사라짐
+
+- 이동 방향 결정 방법
+   1) 인접한 칸 중 아무냄새 없는 칸으로
+   2) 그런칸이 없으면 자신의 냄새가 있는 칸으로
+	  --> 상어마다 특정 우선순위가 있어서 그걸 따르면 됨
+
+
+- 모든 상어가 이동한 후에 한 칸에 여러 마리의 상어가 남아 있으면 가장 작은 번호를 가진 상어를 제외하고
+모두 격자 밖으로 쫓겨남 !
+
+- 1번 상어만 격자에 남게 되기까지 몇초?
+
+1: 위, 2: 아래, 3:왼, 4:오
+
 */
-int res = 0;
-struct Fish {
+int dr[] = { 0,-1,1,0,0 };
+int dc[] = { 0,0,0,-1,1 };
+
+struct SHARK {
 	int r, c, dir;
 	bool isDead;
+	vector<int> priority[5];
 };
-int dr[] = { 0, -1, -1, 0, 1, 1, 1, 0, -1 };
-int dc[] = { 0, 0, -1, -1, -1, 0, 1, 1, 1 };
-void fishCopy(Fish dest[17], Fish src[17]) {
-	for (int i = 1; i <= 16; i++) {
-		dest[i] = src[i];
+struct MAP {
+	vector<int> v;
+	int smellTime;
+	int smellShark;
+};
+MAP map[21][21];
+SHARK shark[410];
+int N, M, k;
+bool chk() {
+	for (int i = 2; i <= M; i++) {
+		if (!shark[i].isDead) return false;
+	}
+	return true;
+}
+void spreadSmell(int time) {
+	for (int i = 1; i <= M; i++) {
+		if (shark[i].isDead)continue;
+		int r = shark[i].r;
+		int c = shark[i].c;
+		map[r][c].smellTime = time + k;
+		map[r][c].smellShark = i;
 	}
 }
-void mapCopy(int dest[4][4], int src[4][4]) {
-	for (int i = 0; i < 4; i++)
-		for (int j = 0; j < 4; j++)
-			dest[i][j] = src[i][j];
+void print() {
+	for (int i = 0; i < N; i++) {
+		for (int j = 0; j < N; j++) {
+			cout << map[i][j].smellShark << "\t" << map[i][j].smellTime << "\t";
+		}
+		cout << "\n";
+	}
+	cout << "--------------------------------------\n\n";
 }
-void dfs(Fish org_fish[17], int org_map[4][4], int r, int c, int sum) {
-	if (res < sum)res = sum;
-	int map[4][4];
-	Fish fish[17];
+void moveShark(int time) {
+	for (int i = 1; i <= M; i++) {
+		if (shark[i].isDead) continue;
+		int r = shark[i].r;
+		int c = shark[i].c;
+		map[r][c].v.clear();
+	}
+	for (int i = 1; i <= M; i++) {
+		cout << "time: " << time << "\n";
+		print();
+		if (shark[i].isDead) continue;
+		int r = shark[i].r;
+		int c = shark[i].c;
+		int dir = shark[i].dir;
+		cout << "r: " << r << " c: " << c << " dir: " << dir << "\n";
+		int mr, mc, mdir;
+		mr = mc = mdir = -1;
+		bool flag = false;
 
-	fishCopy(fish, org_fish);
-	mapCopy(map, org_map);
-
-	int eatNum = map[r][c];
-	int dir = fish[eatNum].dir; //상어 이동 방향 
-	fish[eatNum].isDead = true;
-	map[r][c] = 0;
-	//물고기 이동
-	for (int i = 1; i <= 16; i++) {
-		if (!fish[i].isDead) {
-			int dd = fish[i].dir;
-			int rr = fish[i].r;
-			int cc = fish[i].c;
-			for (int d = 0; d < 8; d++) {
-				int nr = rr + dr[dd];
-				int nc = cc + dc[dd];
-				if (nr < 0 || nc < 0 || nr >= 4 || nc >= 4) { // 맵 벗어나면 
-					dd++;
-					if (dd == 9) {
-						dd = 1;
+		for (int j = 0; j < 4; j++) {
+			int ndir = shark[i].priority[dir][j];
+			int nr = r + dr[ndir];
+			int nc = c + dc[ndir];
+			cout << "ndir: " << ndir << " j: " << j << " num:  " << i << "\n";
+			cout << "nr: " << nr << " nc: " << nc << "\n";
+			if (nr >= 0 && nc >= 0 && nr < N && nc < N) {
+				if (map[nr][nc].smellTime <= time) {
+					flag = true;
+					map[nr][nc].v.push_back(i);
+					shark[i].r = nr;
+					shark[i].c = nc;
+					shark[i].dir = ndir;
+					break;
+				}
+				else {
+					if (map[nr][nc].smellShark == i) {
+						if (mr == -1) {
+							mr = nr;
+							mc = nc;
+							mdir = ndir;
+						}
 					}
-					fish[i].dir = dd;
-					continue;
 				}
-				if (nr == r && nc == c) { //상어 자리면 
-					dd++;
-					if (dd == 9) dd = 1;
-					fish[i].dir = dd;
-					continue;
-				}
-
-				if (map[nr][nc] == 0) { //옮기려는 자리에 물고기 없는 경우 
-					map[nr][nc] = i;
-					map[rr][cc] = 0;
-					fish[i].r = nr;
-					fish[i].c = nc;
-					break;
-				}
-				else { // 물고기리기 자리 바꿈 
-					int tmpNum = map[nr][nc];
-					map[nr][nc] = map[rr][cc];
-					fish[i].r = nr;
-					fish[i].c = nc;
-					fish[i].dir = dd;
-
-					map[rr][cc] = tmpNum;
-					fish[tmpNum].r = rr;
-					fish[tmpNum].c = cc;
-					break;
-				}
-
 			}
 		}
-
-	}
-
-	//상어 이동
-	int rr = r + dr[dir];
-	int cc = c + dc[dir];
-	while (rr >= 0 && cc >= 0 && rr < 4 && cc < 4) {
-		if (map[rr][cc] != 0) {
-			dfs(fish, map, rr, cc, sum + map[rr][cc]);
+		if (!flag) {
+			cout << "mdir: " << mdir << " mr: " << mr << " mc: " << mc << "\n";
+			map[mr][mc].v.push_back(i);
+			shark[i].r = mr;
+			shark[i].c = mc;
+			shark[i].dir = mdir;
 		}
-		rr += dr[dir];
-		cc += dc[dir];
 	}
-	return;
+}
+void eatShark() {
+	for (int i = 1; i <= M; i++) {
+		if (shark[i].isDead) continue;
+		int r = shark[i].r;
+		int c = shark[i].c;
+		//sort(map[r][c].v.begin(), map[r][c].v.end());
+		if (map[r][c].v.size() > 2) {
+			int winShark = map[r][c].v[0];
+			for (int j = 1; j < map[r][c].v.size(); j++) {
+				int num = map[r][c].v[j];
+				shark[num].isDead = true;
+			}
+			map[r][c].v.clear();
+			map[r][c].v.push_back(winShark);
+			map[r][c].smellShark = winShark;
+		}
+	}
 }
 int main()
 {
-	Fish fish[17];
-	int map[4][4];
-	for (int i = 0; i < 4; i++) {
-		for (int j = 0; j < 4; j++) {
-			int num, dir;
-			cin >> num >> dir;
-			fish[num].r = i;
-			fish[num].c = j;
-			fish[num].dir = dir;
-			map[i][j] = num;
-			fish[num].isDead = false;
+	cin >> N >> M >> k;
+	for (int i = 0; i < N; i++) {
+		for (int j = 0; j < N; j++) {
+			int num;
+			cin >> num;
+			if (num > 0) {
+				map[i][j].v.push_back(num);
+				shark[num].r = i;
+				shark[num].c = j;
+			}
+			map[i][j].smellTime = 0;
+			map[i][j].smellShark = 0;
 		}
 	}
-	dfs(fish, map, 0, 0, map[0][0]);
-	cout << res;
+	for (int i = 1; i <= M; i++) {
+		cin >> shark[i].dir;
+		//cout << "shark num: " << i << " dir: " << shark[i].dir << "\n";
+		shark[i].isDead = false;
+	}
+	for (int i = 1; i <= M; i++) {
+		for (int j = 1; j <= 4; j++) {
+			int arr[4];
+			cin >> arr[0] >> arr[1] >> arr[2] >> arr[3];
+			for (int k = 0; k < 4; k++) {
+				shark[i].priority[j].push_back(arr[k]);
+				//cout << shark[i].priority[j][k] << "\n";
+			}
+		}
+	}
+
+	for (int time = 0; time <= 1000; time++) {
+		if (chk()) {
+			cout << time;
+			return 0;
+		}
+		spreadSmell(time);
+		moveShark(time);
+		eatShark();
+	}
+	cout << "-1";
 	return 0;
 }
