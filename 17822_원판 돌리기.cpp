@@ -15,7 +15,7 @@ int dc[] = { 1,-1,0,0 };
 struct QUEUE {
 	int r, c, num;
 };
-void lotation(int dir, int r) {
+void rotation(int dir, int r) {
 	if (dir == 0) {
 		int tmp = map[r][M];
 		for (int c = M; c >= 1; c--) {
@@ -120,7 +120,7 @@ int main() {
 		for (int mul = 1; r <= N; mul++) {
 			r = x * mul;
 			for (int b = 0; b < k; b++) {
-				lotation(d, r);
+				rotation(d, r);
 			}
 		}
 		//인접한 부분 찾기
