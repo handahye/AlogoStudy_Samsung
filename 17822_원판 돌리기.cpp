@@ -75,40 +75,6 @@ bool find() {
 	}
 	return flag;
 }
-bool xfind() {
-	bool flag = false;
-	//가로 인접 찾기
-	for (int i = 1; i <= N; i++) {
-		for (int j = 1; j <= M; j++) {
-			if (map[i][j] == -1) continue;
-			if (j == M && map[i][j] == map[i][1]) {
-				flag = true;
-				map[i][j] = map[i][1] = -1;
-				continue;
-			}
-			if (map[i][j] == map[i][j + 1]) {
-				flag = true;
-				map[i][j] = map[i][j + 1] = -1;
-			}
-		}
-	}
-	//세로 인접 찾기
-	for (int j = 1; j <= M; j++) {
-		for (int i = 1; i <= N; i++) {
-			if (map[i][j] == -1) continue;
-			if (i == N && map[i][j] == map[1][j]) {
-				flag = true;
-				map[i][j] = map[1][j] = -1;
-				continue;
-			}
-			if (map[i][j] == map[i + 1][j]) {
-				flag = true;
-				map[i][j] = map[i + 1][j] = -1;
-			}
-		}
-	}
-	return flag;
-}
 void calAvg() {
 	float sum = 0, cnt = 0;
 	for (int i = 1; i <= N; i++) {
